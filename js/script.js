@@ -57,6 +57,7 @@ function level2(address, type, invite) {
                         }
 
                     } else if (JSON.parse(xmlhttp.responseText)['result']['state'] == 'Invite') {
+                        addToTable(invite, address, 'False', 'False');
                         updateStats('', 1, '', '')
                     } else {
 
