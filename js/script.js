@@ -1,5 +1,6 @@
 var total = 0;
 var current = 0;
+
 function level0(type = 'used') {
     emptyTable();
     updateStats('', '', '', '', true);
@@ -8,10 +9,10 @@ function level0(type = 'used') {
         return
     }
     var lines = textArea.value.split('\n');
-    total = lines.length-1;
+    total = lines.length - 1;
     for (var j = 0; j < lines.length; j++) {
         lines[j] = lines[j].replace(/\s/g, '');
-        
+
         if (lines[j].length !== 64) {
             updateStats(1, '', '', '')
             continue;
@@ -59,8 +60,9 @@ function level2(address, type, invite) {
                     } else if (JSON.parse(xmlhttp.responseText)['result']['state'] == 'Invite') {
                         addToTable(invite, address, 'False', 'False');
                         updateStats('', 1, '', '')
-                    } else {
-
+                    } else if (JSON.parse(xmlhttp.responseText)['result']['state'] == 'Undefined') {
+                        updateStats('', 1, '', '')
+                        addToTable(invite, address, 'False', 'False');
                     }
                 }
 
@@ -82,7 +84,7 @@ function level3(inviteAddress, invite) {
             if (xmlhttp.status == 200) {
                 if (JSON.parse(xmlhttp.responseText)['result'] !== null) {
                     level4(JSON.parse(xmlhttp.responseText)['result'][0]['hash'], JSON.parse(
-                        xmlhttp.responseText)['result'][0]['to'],invite);
+                        xmlhttp.responseText)['result'][0]['to'], invite);
                 }
 
             } else {
@@ -101,7 +103,7 @@ function level4(Tx, InvitedAddress, invite) {
         if (xmlhttp.readyState == XMLHttpRequest.DONE) {
             if (xmlhttp.status == 200) {
                 if (JSON.parse(xmlhttp.responseText)['result'] !== null) {
-                    level5(JSON.parse(xmlhttp.responseText)['result']['epoch'], InvitedAddress,invite);
+                    level5(JSON.parse(xmlhttp.responseText)['result']['epoch'], InvitedAddress, invite);
                 }
 
             } else {
@@ -123,7 +125,7 @@ function level5(epoch, address, invite) {
                     if (JSON.parse(xmlhttp.responseText)['result']['state'] == 'Newbie') {
                         updateStats('', '', '', 1)
                         addToTable(invite, address, 'True', 'True');
-                    }else{
+                    } else {
                         addToTable(invite, address, 'True', 'False');
                     }
                 }
@@ -164,18 +166,18 @@ function updateStats(Invalid, NotUsed, Used, Passed, newStats = false) {
 }
 
 function updateProgress(made, Total) {
-    document.getElementById('Invites-Progress').style.width = (made/Total)*100 +'%';
+    document.getElementById('Invites-Progress').style.width = (made / Total) * 100 + '%';
 }
 
 function emptyTable() {
     current = 0;
-    updateProgress(0,1);
+    updateProgress(0, 1);
     document.getElementById('Invites-Table').innerHTML = '';
 }
 
 function addToTable(Invite, Address, Used, Passed) {
     current = current + 1;
-    updateProgress(current,total);
+    updateProgress(current, total);
     document.getElementById('Invites-Table').innerHTML = document.getElementById('Invites-Table').innerHTML +
         '<tr>' +
         '<th scope="row">' + Invite.substring(0, 15) + '...</th>' +
