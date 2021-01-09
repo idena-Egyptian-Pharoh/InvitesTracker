@@ -54,7 +54,7 @@ function level2(address, type, invite) {
                         if (type == 'passed') {
                             level3(address, invite);
                         } else {
-                            addToTable(invite, address, 'True', 'False');
+                            //addToTable(invite, address, 'True', 'False');
                         }
 
                     } else if (JSON.parse(xmlhttp.responseText)['result']['state'] == 'Invite') {
@@ -124,9 +124,9 @@ function level5(epoch, address, invite) {
                 if (JSON.parse(xmlhttp.responseText)['result'] !== null) {
                     if (JSON.parse(xmlhttp.responseText)['result']['state'] == 'Newbie') {
                         updateStats('', '', '', 1)
-                        addToTable(invite, address, 'True', 'True');
+                        //addToTable(invite, address, 'True', 'True');
                     } else {
-                        addToTable(invite, address, 'True', 'False');
+                        //addToTable(invite, address, 'True', 'False');
                     }
                 }
 
@@ -180,7 +180,7 @@ function addToTable(Invite, Address, Used, Passed) {
     updateProgress(current, total);
     document.getElementById('Invites-Table').innerHTML = document.getElementById('Invites-Table').innerHTML +
         '<tr>' +
-        '<th scope="row">' + Invite.substring(0, 15) + '...</th>' +
+        '<th scope="row">' + Invite + '...</th>' +
         '<td>' + Address.substring(0, 15) + '...</td>' +
         '<td>' + Used + '</td>' +
         '<td>' + Passed + '</td>' +
