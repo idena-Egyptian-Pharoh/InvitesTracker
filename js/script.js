@@ -180,7 +180,7 @@ function addToTable(Invite, Address, Used, Passed) {
     updateProgress(current, total);
     document.getElementById('Invites-Table').innerHTML = document.getElementById('Invites-Table').innerHTML +
         '<tr>' +
-        '<th scope="row">' + Invite + '...</th>' +
+        '<th scope="row">' + Invite + '</th>' +
         '<td>' + Address.substring(0, 15) + '...</td>' +
         '<td>' + Used + '</td>' +
         '<td>' + Passed + '</td>' +
