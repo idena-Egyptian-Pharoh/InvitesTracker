@@ -60,7 +60,7 @@ function level2(address, type, invite) {
             if (type == "passed") {
               level3(address, invite);
             } else {
-              addToTable(invite, "Didn't pass");
+              addToTable(invite, "Used");
             }
           } else if (
             JSON.parse(xmlhttp.responseText)["result"]["state"] == "Invite"
@@ -202,6 +202,8 @@ function addToTable(Invite, type) {
   if (type == "Didn't pass") {
     color = "danger";
   } else if (type == "Passed") {
+    color = "success";
+  } else if (type == "Used") {
     color = "success";
   } else if (type == "Not Used") {
     color = "warning";
