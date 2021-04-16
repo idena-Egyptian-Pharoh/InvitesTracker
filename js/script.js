@@ -1,220 +1,207 @@
-var total = 0;
-var current = 0;
-
-function level0(type = "used") {
-  emptyTable();
-  updateStats("", "", "", "", true);
-  var textArea = document.getElementById("Invites-textarea");
-  if (textArea.value == "") {
-    return;
-  }
-  var lines = textArea.value.split("\n");
-
-  for (var j = 0; j < lines.length; j++) {
-    lines[j] = lines[j]
-      .replace(/\s/g, "")
-      .replace(/['"]+/g, "")
-      .replace(":", "")
-      .replace("key", "");
-    console.log(lines[j]);
-    if (lines[j].length == 64) {
-      total += 1;
-      level1(lines[j], type);
+function cleanInvites(invitesText) {
+    if (invitesText == "") {
+        return [];
     }
-    continue;
-  }
-}
+    let lines = invitesText.split("\n");
+    let invitesArray = [];
+    for (var j = 0; j < lines.length; j++) {
+        lines[j] = lines[j]
+            .replace(/\s/g, "")
+            .replace(/['"]+/g, "")
+            .replace(":", "")
+            .replace("key", "");
 
-function level1(invite, type) {
-  var xmlhttp = new XMLHttpRequest();
-  xmlhttp.onreadystatechange = function () {
-    if (xmlhttp.readyState == XMLHttpRequest.DONE) {
-      if (xmlhttp.status == 200) {
-        if (JSON.parse(xmlhttp.responseText)["result"] !== null) {
-          level2(
-            JSON.parse(xmlhttp.responseText)["result"][0]["value"],
-            type,
-            invite
-          );
-        } else {
-          updateStats(1, "", "", "");
+        if (lines[j].length == 64) {
+            invitesArray.push(lines[j]);
         }
-      } else {
-        return null;
-      }
+        continue;
     }
-  };
-
-  xmlhttp.open("GET", "https://api.idena.org/api/search?value=" + invite, true);
-  xmlhttp.send();
+    return invitesArray;
 }
-
-function level2(address, type, invite) {
-  var xmlhttp = new XMLHttpRequest();
-  xmlhttp.onreadystatechange = function () {
-    if (xmlhttp.readyState == XMLHttpRequest.DONE) {
-      if (xmlhttp.status == 200) {
-        if (JSON.parse(xmlhttp.responseText)["result"] !== null) {
-          if (JSON.parse(xmlhttp.responseText)["result"]["state"] == "Killed") {
-            updateStats("", "", 1, "");
-            if (type == "passed") {
-              level3(address, invite);
-            } else {
-              addToTable(invite, "Used");
+const snooze = ms => new Promise(resolve => setTimeout(resolve, ms));
+async function getInviteStatus(invite) {
+    try {
+        let address = await searchForInviteAddress(invite);
+        if (address) {
+            let resp = await axios.get(`https://api.idena.org/api/identity/${address}`)
+            if (resp.status == 200 && resp.data) {
+                return resp.data.result.state;
             }
-          } else if (
-            JSON.parse(xmlhttp.responseText)["result"]["state"] == "Invite"
-          ) {
-            addToTable(invite, "Not Used");
-            updateStats("", 1, "", "");
-          } else if (
-            JSON.parse(xmlhttp.responseText)["result"]["state"] == "Undefined"
-          ) {
-            updateStats("", 1, "", "");
-            addToTable(invite, "Not Used");
-          }
+        } else {
+            return null
         }
-      } else {
-        return null;
-      }
+    } catch (error) {
+        return null
     }
-  };
 
-  xmlhttp.open("GET", "https://api.idena.org/api/identity/" + address, true);
-  xmlhttp.send();
+
 }
+async function checkEpochOfTx(tx) {
+    let resp = await axios.get(`https://api.idena.io/api/Transaction/${tx}`)
+    if (resp.status == 200 && resp.data) {
+        return resp.data.result.epoch;
+    }
+}
+async function checkValidationStatus(identityAddress, epoch) {
 
-function level3(inviteAddress, invite) {
-  var xmlhttp = new XMLHttpRequest();
-  xmlhttp.onreadystatechange = function () {
-    if (xmlhttp.readyState == XMLHttpRequest.DONE) {
-      if (xmlhttp.status == 200) {
-        if (JSON.parse(xmlhttp.responseText)["result"] !== null) {
-          level4(
-            JSON.parse(xmlhttp.responseText)["result"][0]["hash"],
-            JSON.parse(xmlhttp.responseText)["result"][0]["to"],
-            invite
-          );
+    let resp = await axios.get(`https://api.idena.org/api/epoch/${epoch}/identity/${identityAddress}`)
+    if (resp.status == 200 && resp.data) {
+        return resp.data.result.state;
+    }
+}
+async function getInviteeAddressAndTxHash(invite) {
+    try {
+        let inviteAddress = await searchForInviteAddress(invite);
+        if (inviteAddress) {
+            let resp = await axios.get(`https://api.idena.org/api/address/${inviteAddress}/Txs?limit=1`);
+            if (resp.status == 200 && resp.data) {
+                if (resp.data.result[0].type == "ActivationTx") {
+                    return [
+                        resp.data.result[0].to,
+                        resp.data.result[0].hash
+                    ];
+                } else {
+                    return [null, null]
+                }
+            }
+        } else {
+            return null
         }
-      } else {
-        return null;
-      }
+
+    } catch (error) {
+        return null
     }
-  };
 
-  xmlhttp.open(
-    "GET",
-    "https://api.idena.org/api/address/" + inviteAddress + "/Txs?limit=1",
-    true
-  );
-  xmlhttp.send();
-}
-
-function level4(Tx, InvitedAddress, invite) {
-  var xmlhttp = new XMLHttpRequest();
-  xmlhttp.onreadystatechange = function () {
-    if (xmlhttp.readyState == XMLHttpRequest.DONE) {
-      if (xmlhttp.status == 200) {
-        if (JSON.parse(xmlhttp.responseText)["result"] !== null) {
-          level5(
-            JSON.parse(xmlhttp.responseText)["result"]["epoch"],
-            InvitedAddress,
-            invite
-          );
-        }
-      } else {
-        return null;
-      }
-    }
-  };
-
-  xmlhttp.open("GET", "https://api.idena.io/api/Transaction/" + Tx, true);
-  xmlhttp.send();
-}
-
-function level5(epoch, address, invite) {
-  var xmlhttp = new XMLHttpRequest();
-  xmlhttp.onreadystatechange = function () {
-    if (xmlhttp.readyState == XMLHttpRequest.DONE) {
-      if (xmlhttp.status == 200) {
-        if (JSON.parse(xmlhttp.responseText)["result"] !== null) {
-          if (JSON.parse(xmlhttp.responseText)["result"]["state"] == "Newbie") {
-            updateStats("", "", "", 1);
-            addToTable(invite, "Passed");
-          } else {
-            addToTable(invite, "Didn't pass");
-          }
-        }
-      } else {
-        return null;
-      }
-    }
-  };
-
-  xmlhttp.open(
-    "GET",
-    "https://api.idena.org/api/epoch/" + epoch + "/identity/" + address,
-    true
-  );
-  xmlhttp.send();
-}
-
-function updateStats(Invalid, NotUsed, Used, Passed, newStats = false) {
-  if (newStats == true) {
-    document.getElementById("Invalid-Count").innerHTML = "0";
-    document.getElementById("NotUsed-Count").innerHTML = "0";
-    document.getElementById("Used-Count").innerHTML = "0";
-    document.getElementById("Passed-Count").innerHTML = "0";
-  }
-  if (Invalid !== "") {
-    document.getElementById("Invalid-Count").innerHTML =
-      Number(document.getElementById("Invalid-Count").innerHTML) + 1;
-  }
-  if (NotUsed !== "") {
-    document.getElementById("NotUsed-Count").innerHTML =
-      Number(document.getElementById("NotUsed-Count").innerHTML) + 1;
-  }
-  if (Used !== "") {
-    document.getElementById("Used-Count").innerHTML =
-      Number(document.getElementById("Used-Count").innerHTML) + 1;
-  }
-  if (Passed !== "") {
-    document.getElementById("Passed-Count").innerHTML =
-      Number(document.getElementById("Passed-Count").innerHTML) + 1;
-  }
-}
-
-function updateProgress(made, Total) {
-  document.getElementById("Invites-Progress").style.width =
-    (made / Total) * 100 + "%";
 }
 
 function emptyTable() {
-  current = 0;
-  updateProgress(0, 1);
-  document.getElementById("Invites-Table").innerHTML = "";
+    updateProgress(0, 1);
+    document.getElementById("Invites-Table").innerHTML = "";
+}
+
+function updateStats(Invalid, NotUsed, Used, Passed, newStats = false) {
+    if (newStats == true) {
+        document.getElementById("Invalid-Count").innerHTML = "0";
+        document.getElementById("NotUsed-Count").innerHTML = "0";
+        document.getElementById("Used-Count").innerHTML = "0";
+        document.getElementById("Passed-Count").innerHTML = "0";
+    }
+    if (Invalid !== "") {
+        document.getElementById("Invalid-Count").innerHTML =
+            Number(document.getElementById("Invalid-Count").innerHTML) + 1;
+    }
+    if (NotUsed !== "") {
+        document.getElementById("NotUsed-Count").innerHTML =
+            Number(document.getElementById("NotUsed-Count").innerHTML) + 1;
+    }
+    if (Used !== "") {
+        document.getElementById("Used-Count").innerHTML =
+            Number(document.getElementById("Used-Count").innerHTML) + 1;
+    }
+    if (Passed !== "") {
+        document.getElementById("Passed-Count").innerHTML =
+            Number(document.getElementById("Passed-Count").innerHTML) + 1;
+    }
+}
+
+function updateProgress(made, Total) {
+    document.getElementById("Invites-Progress").style.width =
+        (made / Total) * 100 + "%";
 }
 
 function addToTable(Invite, type) {
-  current = current + 1;
-  updateProgress(current, total);
-  let color;
-  if (type == "Didn't pass") {
-    color = "danger";
-  } else if (type == "Passed") {
-    color = "success";
-  } else if (type == "Used") {
-    color = "success";
-  } else if (type == "Not Used") {
-    color = "warning";
-  }
-  document.getElementById("Invites-Table").innerHTML +=
-    "<tr>" +
-    '<th scope="row">' +
-    Invite +
-    "</th>" +
-    `<td class="text-${color}">` +
-    type +
-    "</td>" +
-    "</tr>";
+
+
+    let color;
+    if (type == "Didn't Pass") {
+        color = "danger";
+    } else if (type == "Passed") {
+        color = "success";
+    } else if (type == "Used") {
+        color = "success";
+    } else if (type == "Not Used") {
+        color = "warning";
+    }
+    document.getElementById("Invites-Table").innerHTML +=
+        "<tr>" +
+        '<th scope="row">' +
+        Invite +
+        "</th>" +
+        `<td class="text-${color}">` +
+        type +
+        "</td>" +
+        "</tr>";
+}
+async function searchForInviteAddress(invite) {
+    try {
+        let resp = await axios.get(`https://api.idena.org/api/search?value=${invite}`)
+        if (resp.status == 200 && resp.data) {
+
+            return resp.data.result[0].Value;
+        }
+    } catch (error) {
+        return null
+    }
+
+}
+async function startChecker(pass = false) {
+    emptyTable();
+    updateStats("", "", "", "", true);
+    let invitesText = document.getElementById("invites-textarea").value;
+    let invites = await cleanInvites(invitesText);
+    let invitesIndex = 0;
+    for (const invite of invites) {
+        await snooze(1000);
+        let inviteStatus = await getInviteStatus(invite);
+        switch (inviteStatus) {
+            case "Invite": // not used
+                if (pass == true) {
+                    addToTable(invite, "Didn't Pass");
+                    updateStats("", "", "", "");
+                } else {
+                    addToTable(invite, "Not Used");
+                    updateStats("", 1, "", "");
+                }
+                break;
+            case "Killed": // used
+                if (pass == true) {
+                    let [
+                        inviteeAddress,
+                        txHash
+                    ] = await getInviteeAddressAndTxHash(invite);
+                    let epoch = await checkEpochOfTx(txHash);
+                    if (!inviteeAddress || !epoch) {
+                        updateStats(1, "", "", "");
+                    } else {
+                        let validationStatus = await checkValidationStatus(inviteeAddress, epoch);
+                        if (validationStatus == "Newbie") {
+                            addToTable(invite, "Passed");
+                            updateStats("", "", "", 1);
+                        } else {
+                            addToTable(invite, "Didn't Pass");
+                            updateStats("", "", 1, "");
+                        }
+                    }
+
+                } else {
+                    addToTable(invite, "Used");
+                    updateStats("", "", 1, "");
+                }
+
+                break;
+            case "Undefined": // nothing
+
+                addToTable(invite, "Not Used");
+                updateStats("", 1, "", "");
+
+
+                break;
+            default:
+                updateStats(1, "", "", "");
+                break;
+        }
+        invitesIndex++;
+        updateProgress(invitesIndex, invites.length)
+    }
+
 }
