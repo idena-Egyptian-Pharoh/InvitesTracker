@@ -151,7 +151,7 @@ async function startChecker(pass = false) {
     let invites = await cleanInvites(invitesText);
     let invitesIndex = 0;
     for (const invite of invites) {
-        await snooze(1000);
+        await snooze(1500);
         let inviteStatus = await getInviteStatus(invite);
         switch (inviteStatus) {
             case "Invite": // not used
