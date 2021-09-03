@@ -85,8 +85,6 @@ function updateStats(Invalid, NotUsed, Used, Passed, newStats = false) {
         document.getElementById("NotUsed-Count").innerHTML = "0";
         document.getElementById("Used-Count").innerHTML = "0";
         document.getElementById("Passed-Count").innerHTML = "0";
-        document.getElementById("Didn't-Pass").innerHTML = "0";
-        
     }
     if (Invalid !== "") {
         document.getElementById("Invalid-Count").innerHTML =
@@ -103,10 +101,6 @@ function updateStats(Invalid, NotUsed, Used, Passed, newStats = false) {
     if (Passed !== "") {
         document.getElementById("Passed-Count").innerHTML =
             Number(document.getElementById("Passed-Count").innerHTML) + 1;
-    }
-    if (Invalid !== "") {
-        document.getElementById("Didn't-Pass").innerHTML =
-            Number(document.getElementById("Didn't-Pass").innerHTML) + 1;
     }
 }
 
